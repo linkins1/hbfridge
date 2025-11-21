@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>冰箱管家 Cloud ☁️</title>
+    <style>
+        :root {
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --text-primary: #1C1C1E;
+            --text-secondary: #8E8E93;
+            --accent: #007AFF;
+            --danger: #FF3B30;
+            --warning: #FF9500;
+            --success: #34C759;
+            --radius: 14px;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px 16px 80px 16px;
+            color: var(--text-primary);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 顶部栏 */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .app-title { font-size: 24px; font-weight: 800; }
+        .settings-btn {
+            font-size: 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .refresh-btn {
+            font-size: 14px;
+            color: var(--accent);
+            background: #EEF2FF;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: none;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        /* 统计卡 */
+        .header-stats { display: flex; gap: 10px; margin-bottom: 20px; }
+        .stat-box {
+            flex: 1;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: var(--radius);
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        .stat-num { font-size: 24px; font-weight: 800; display: block; }
+        .stat-label { font-size: 12px; color: var(--text-secondary); }
+        .text-danger { color: var(--danger); }
+
+        /* 输入区域 */
+        .input-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        input {
+            flex: 1;
+            background: #F2F2F7;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* 快捷日期 */
+        .quick-dates { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .chip {
+            background: #EEF2FF; color: var(--accent); padding: 6px 12px;
+            border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap;
+            cursor: pointer;
+        }
+        .chip.active { background: var(--accent); color: white; }
+
+        button.add-btn {
+            width: 100%; background: var(--text-primary); color: white;
+            border: none; padding: 14px; border-radius: 12px;
+            font-size: 16px; font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        button.add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 列表 */
+        h2 { font-size: 18px; color: var(--text-secondary); margin: 20px 0 10px 5px; font-weight: 600; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li {
+            background: var(--card-bg); border-radius: var(--radius); padding: 16px;
+            margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: all 0.3s ease;
+        }
+        li.removing { opacity: 0; transform: translateX(-100%); height: 0; margin: 0; padding: 0; }
+        
+        .info { flex: 1; }
+        .name { font-size: 17px; font-weight: 600; display: block; margin-bottom: 4px; }
+        .meta { font-size: 13px; color: var(--text-secondary); }
+        .days-badge {
+            padding: 5px 10px; border-radius: 8px; font-size: 13px; font-weight: 700;
+            margin-right: 15px; min-width: 40px; text-align: center;
+        }
+        .bg-danger { background: #FFE5E5; color: var(--danger); }
+        .bg-warning { background: #FFF4E5; color: var(--warning); }
+        .bg-success { background: #E5F9E9; color: var(--success); }
+        .bg-gray { background: #F2F2F7; color: var(--text-secondary); }
+
+        .check-btn {
+            width: 36px; height: 36px; border-radius: 50%; border: 2px solid #E5E5EA;
+            background: transparent; color: #E5E5EA; display: flex; align-items: center;
+            justify-content: center; font-size: 18px; cursor: pointer;
+        }
+
+        /* 设置模态框 */
+        #settings-modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 100; display: none;
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: white; width: 85%; padding: 25px; border-radius: 20px;
+        }
+        .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 15px; }
+        .modal-hint { font-size: 13px; color: #8E8E93; margin-bottom: 15px; line-height: 1.4; }
+        .modal-btn {
+            background: var(--accent); color: white; width: 100%; padding: 12px;
+            border: none; border-radius: 10px; font-size: 16px; margin-top: 10px;
+        }
+        
+        #loading {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 15px 25px;
+            border-radius: 30px; font-weight: 600; z-index: 200; display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">正在同步云端...</div>
+
+    <div id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-title">☁️ 云同步设置</div>
+            <div class="modal-hint">
+                请输入 JSONBin.io 的密钥以开启多设备同步。<br>
+                两台手机必须输入完全相同的信息。
+            </div>
+            <input type="text" id="apiKey" placeholder="Master Key ($2a$10...)" style="margin-bottom: 10px; background: #F2F2F7;">
+            <input type="text" id="binId" placeholder="Bin ID (655...)" style="margin-bottom: 10px; background: #F2F2F7;">
+            <button class="modal-btn" onclick="saveSettings()">保存并同步</button>
+            <button class="modal-btn" onclick="closeSettings()" style="background: #E5E5EA; color: black; margin-top: 8px;">取消</button>
+        </div>
+    </div>
+
+    <div class="navbar">
+        <span class="app-title">冰箱管家 ☁️</span>
+        <div>
+            <button class="refresh-btn" onclick="loadFromCloud()">🔄 刷新</button>
+            <button class="settings-btn" onclick="openSettings()">⚙️</button>
+        </div>
+    </div>
+
+    <div class="header-stats">
+        <div class="stat-box">
+            <span class="stat-num" id="total-count">-</span>
+            <span class="stat-label">总食材</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-num text-danger" id="expiring-count">-</span>
+            <span class="stat-label">急需处理</span>
+        </div>
+    </div>
+
+    <div class="input-card">
+        <div class="form-row">
+            <input type="text" id="name" placeholder="食材 (如: 鸡蛋)" style="flex: 2;">
+            <input type="text" id="quantity" placeholder="数量" style="flex: 1;">
+        </div>
+        <div class="quick-dates">
+            <div class="chip" onclick="setDate(3)">+3天</div>
+            <div class="chip" onclick="setDate(7)">+1周</div>
+            <div class="chip" onclick="setDate(14)">+2周</div>
+            <div class="chip" onclick="setDate(30)">+1月</div>
+        </div>
+        <div class="form-row">
+            <input type="date" id="date">
+        </div>
+        <button class="add-btn" id="add-btn" onclick="addItem()">放入冰箱</button>
+    </div>
+
+    <div id="lists-container"></div>
+
+    <script>
+        let ingredients = [];
+        let config = {
+            apiKey: localStorage.getItem('fridge_apiKey') || '',
+            binId: localStorage.getItem('fridge_binId') || ''
+        };
+
+        // 初始化日期
+        const dateInput = document.getElementById('date');
+        const today = new Date();
+        today.setDate(today.getDate() + 7);
+        dateInput.valueAsDate = today;
+
+        // 启动
+        if (!config.apiKey || !config.binId) {
+            openSettings(); // 没配置过，直接弹出设置
+        } else {
+            loadFromCloud(); // 有配置，加载数据
+        }
+
+        // --- 云端逻辑 ---
+
+        async function loadFromCloud() {
+            if (!config.apiKey || !config.binId) return;
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${config.binId}/latest`, {
+                    headers: {
+                        'X-Master-Key': config.apiKey
+                    }
+                });
+                
+                if (!response.ok) throw new Error('加载失败，请检查密钥');
+                
+                const data = await response.json();
+                // JSONBin 返回的数据在 record 字段里
+                ingredients = Array.isArray(data.record) ? data.record : [];
+                render();
+            } catch (e) {
+                alert("同步失败: " + e.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function saveToCloud() {
+            if (!config.apiKey || !config.binId) {
+                alert("请先设置云同步密钥！");
+                openSettings();
+                return;
+            }
+            showLoading(true);
+
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${config.binId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': config.apiKey
+                    },
+                    body: JSON.stringify(ingredients)
+                });
+
+                if (!response.ok) throw new Error('保存失败');
+                
+            } catch (e) {
+                alert("保存失败，请重试: " + e.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // --- UI 逻辑 ---
+
+        function render() {
+            const container = document.getElementById('lists-container');
+            container.innerHTML = '';
+            
+            ingredients.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            const urgentItems = [];
+            const freshItems = [];
+            let expiringCount = 0;
+
+            ingredients.forEach((item, index) => {
+                item.idx = index; // 临时索引
+                const days = getDaysDiff(item.date);
+                if (days <= 3) {
+                    urgentItems.push(item);
+                    expiringCount++;
+                } else {
+                    freshItems.push(item);
+                }
+            });
+
+            document.getElementById('total-count').innerText = ingredients.length;
+            document.getElementById('expiring-count').innerText = expiringCount;
+
+            const createList = (title, items) => {
+                if (items.length === 0) return;
+                const header = document.createElement('h2');
+                header.innerText = title;
+                container.appendChild(header);
+                const ul = document.createElement('ul');
+                
+                items.forEach(item => {
+                    const days = getDaysDiff(item.date);
+                    let badgeClass = days < 0 ? 'bg-gray' : (days <= 2 ? 'bg-danger' : (days <= 5 ? 'bg-warning' : 'bg-success'));
+                    let daysText = days < 0 ? '已过期' : days + '天';
+
+                    const li = document.createElement('li');
+                    li.id = `item-${item.idx}`;
+                    li.innerHTML = `
+                        <div class="info">
+                            <span class="name">${item.name}</span>
+                            <span class="meta">${item.quantity} • ${item.date}</span>
+                        </div>
+                        <div class="days-badge ${badgeClass}">${daysText}</div>
+                        <button class="check-btn" onclick="removeItem(${item.idx})">✓</button>
+                    `;
+                    ul.appendChild(li);
+                });
+                container.appendChild(ul);
+            };
+
+            createList('⚠️ 急需处理', urgentItems);
+            createList('🥬 还可以放', freshItems);
+
+            if (ingredients.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#8E8E93; margin-top:50px;">冰箱空空如也 ☁️</div>';
+            }
+        }
+
+        async function addItem() {
+            const name = document.getElementById('name').value;
+            const quantity = document.getElementById('quantity').value;
+            const date = document.getElementById('date').value;
+            
+            if (!name || !date) return alert("请填写完整");
+
+            ingredients.push({ name, quantity, date });
+            render(); // 先本地更新UI，反应快
+            
+            // 清空
+            document.getElementById('name').value = '';
+            document.getElementById('quantity').value = '';
+            
+            await saveToCloud(); // 后台上传
+        }
+
+        async function removeItem(index) {
+            const li = document.getElementById(`item-${index}`);
+            if (li) li.classList.add('removing');
+            
+            setTimeout(async () => {
+                ingredients.splice(index, 1);
+                render();
+                await saveToCloud();
+            }, 300);
+        }
+
+        // --- 工具函数 ---
+
+        function setDate(days) {
+            const d = new Date();
+            d.setDate(d.getDate() + days);
+            dateInput.valueAsDate = d;
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function getDaysDiff(ds) {
+            return Math.ceil((new Date(ds).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('add-btn').disabled = show;
+        }
+
+        // --- 设置相关 ---
+        function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
+        function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
+        
+        function saveSettings() {
+            const key = document.getElementById('apiKey').value.trim();
+            const id = document.getElementById('binId').value.trim();
+            
+            if(key && id) {
+                localStorage.setItem('fridge_apiKey', key);
+                localStorage.setItem('fridge_binId', id);
+                config.apiKey = key;
+                config.binId = id;
+                closeSettings();
+                loadFromCloud();
+            } else {
+                alert("请输入完整的 Key 和 ID");
+            }
+        }
+        
+        // 填充已有设置
+        document.getElementById('apiKey').value = config.apiKey;
+        document.getElementById('binId').value = config.binId;
+
+    </script>
+</body>
+</html>
